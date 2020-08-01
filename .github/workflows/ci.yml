@@ -19,4 +19,4 @@ jobs:
     - name: Run unit tests
       run: go test ./...
     - name: Go Build
-      run: go install ./..
+      run: go install ./
