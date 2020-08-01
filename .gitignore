@@ -1,2 +1,4 @@
 .env
 server
+__debug_bin
+.vscode

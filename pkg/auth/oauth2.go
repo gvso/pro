@@ -4,8 +4,14 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// Available providers.
+const (
+	GoogleProvider = "Google"
+)
+
 // ProviderUser is information about an user retrieved from provider.
 type ProviderUser struct {
+	UserID      string
 	Email       string
 	Name        string
 	Lastname    string
@@ -25,7 +31,7 @@ type Provider interface {
 	AccessToken(code string) (*oauth2.Token, error)
 
 	// Retrieves information about the user from the provider.
-	UserInfo(token *oauth2.Token) (*ProviderUser, error)
+	UserInfo(token *oauth2.Token) (ProviderUser, error)
 }
 
 // newOAuth2Config initializes configuration for OAuth2 authentication.
