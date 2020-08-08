@@ -25,39 +25,32 @@ type User struct {
 	FacebookToken string `json:"-" bson:"facebookToken"`
 }
 
-// GetOrCreate registers or gets an user from database.
-//
-// If the user was not registered yet, it creates an record in the database.
-func GetOrCreate(ctx context.Context, db database.Client, provider string,
-	userInfo auth.ProviderUser) (user User, err error) {
-
+// GetByProviderID returns a user whose provider's ID matches the given one.
+func GetByProviderID(ctx context.Context, db database.Client, provider, ID string) (*User, error) {
 	var providerIDKey string
 	switch provider {
 	case auth.GoogleProvider:
 		providerIDKey = "google"
 	default:
-		return user, errors.Errorf("invalid provider %v", provider)
+		return nil, errors.Errorf("invalid provider %v", provider)
 	}
 	providerIDKey += "Id"
 
-	filter := bson.M{providerIDKey: userInfo.UserID}
-	err = db.Collection("users").FindOne(ctx, filter).Decode(&user)
+	filter := bson.M{providerIDKey: ID}
+	var user User
+	err := db.Collection("users").FindOne(ctx, filter).Decode(&user)
 	if err == mongo.ErrNoDocuments {
-		user, err := createUser(ctx, db, provider, userInfo)
-		return user, errors.Wrap(err, "failed to create user")
-
+		return nil, nil
 	}
 	if err != nil {
-		return user, errors.Wrap(err, "error when querying database")
+		return nil, errors.Wrap(err, "failed to obtain user record")
 	}
-
-	return user, nil
+	return &user, nil
 }
 
-func createUser(ctx context.Context, db database.Client, provider string,
-	userInfo auth.ProviderUser) (user User, err error) {
-
-	user = User{
+// Create adds a user record to the database.
+func Create(ctx context.Context, db database.Client, provider string, userInfo auth.ProviderUser) (*User, error) {
+	user := &User{
 		Name:     userInfo.Name,
 		Lastname: userInfo.Lastname,
 		Email:    userInfo.Email,
@@ -67,13 +60,18 @@ func createUser(ctx context.Context, db database.Client, provider string,
 		user.GoogleID = userInfo.UserID
 		user.GoogleToken = userInfo.AccessToken
 	default:
-		return user, errors.Errorf("unsupported provider %s", provider)
+		return nil, errors.Errorf("unsupported provider %s", provider)
 	}
 
 	res, err := db.Collection("users").InsertOne(ctx, user)
 	if err != nil {
-		errors.Wrap(err, "failed to insert user in database")
+		return nil, errors.Wrap(err, "failed to insert user in database")
 	}
-	user.ID = res.(primitive.ObjectID)
+
+	id, ok := res.(primitive.ObjectID)
+	if !ok {
+		return nil, errors.Errorf("invalid user id: %v", res)
+	}
+	user.ID = id
 	return user, nil
 }

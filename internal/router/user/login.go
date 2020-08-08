@@ -53,7 +53,6 @@ func callback(logger *logrus.Entry, cfg config.Config, db database.Client, provi
 		})
 
 		logger.Debug("processing callback")
-		logger.Debug("getting access token")
 		userInfo, err := userInfoFromProvider(logger, provider, c.Query("code"))
 		if err != nil {
 			logger.Errorf("failed to get user information from provider: %v", err)
@@ -63,17 +62,27 @@ func callback(logger *logrus.Entry, cfg config.Config, db database.Client, provi
 
 		// We have information on the user from the provider. We can proceed
 		// to finding a linked account in our application.
-		logger.Debug("getting or creating user")
+		logger.Debug("getting user from database")
 		ctx := util.ContextWithLogger(c.Request.Context(), logger)
-		u, err := user.GetOrCreate(ctx, db, provider.Name(), userInfo)
+		u, err := user.GetByProviderID(ctx, db, provider.Name(), userInfo.UserID)
 		if err != nil {
-			logger.Errorf("failed to login user: %v", err)
-			c.JSON(500, httpresponse.Error("could not log user in"))
+			logger.Errorf("error when getting user from database: %v", err)
+			c.JSON(500, httpresponse.Error("failed to get user from database"))
 			return
 		}
 
-		logger.Debug("generating JWT token")
+		// User does not exist in database.
+		if u == nil {
+			logger.Debug("user is new, creating record")
+			u, err = user.Create(ctx, db, provider.Name(), userInfo)
+			if err != nil {
+				logger.Errorf("error when creating user: %v", err)
+				c.JSON(500, httpresponse.Error("failed to create user"))
+				return
+			}
+		}
 
+		logger.Debug("generating JWT token")
 		// 7 days for expiration.
 		durationSeconds := 7 * 24 * 60 * 60
 		tokenDuration := time.Duration(durationSeconds) * time.Second
@@ -92,6 +101,7 @@ func callback(logger *logrus.Entry, cfg config.Config, db database.Client, provi
 // userInfoFromProvider retrieves a long-lived access token and retrieves the
 // user information from the provider
 func userInfoFromProvider(logger *logrus.Entry, provider auth.Provider, code string) (u auth.ProviderUser, err error) {
+	logger.Debug("getting access token")
 	accessToken, err := provider.AccessToken(code)
 	if err != nil {
 		return u, errors.Wrap(err, "failed to get access token")

@@ -2,6 +2,7 @@ package mock
 
 import (
 	"context"
+	"errors"
 	"reflect"
 
 	"github.com/gvso/pro/pkg/database"
@@ -71,6 +72,10 @@ func ClientMock(srValue interface{}, srDecodeErr error, insertOneID interface{})
 			singleResultMock := SingleResult{}
 			singleResultMock.DecodeFn = func(v interface{}) error {
 				d := reflect.ValueOf(srValue)
+				if d.Kind() == reflect.Ptr {
+					return errors.New("UNIT TESTING: the value to assign when decoding a single result can't be a pointer")
+				}
+
 				if d.IsValid() {
 					s := reflect.ValueOf(v).Elem()
 					s.Set(d)
