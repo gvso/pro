@@ -4,10 +4,12 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.61.0 // indirect
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/gin-contrib/requestid v0.0.0-20200512155051-855d6508f0f0
 	github.com/gin-gonic/gin v1.6.3
 	github.com/google/uuid v1.1.1
 	github.com/joho/godotenv v1.3.0
+	github.com/jonboulle/clockwork v0.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.6.0
 	github.com/stretchr/testify v1.4.0

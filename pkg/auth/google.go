@@ -21,10 +21,10 @@ type Google struct {
 }
 
 // NewGoogleProvider initializes the provider for Gooogle.
-func NewGoogleProvider(clientID, clientSecret, baseURL string) *Google {
+func NewGoogleProvider(clientID, clientSecret, baseURL string) Google {
 	callbackURL := baseURL + "/user/login/google/callback"
 	scopes := []string{"openid", "email", "profile"}
-	return &Google{
+	return Google{
 		oauth2Config: newOAuth2Config(clientID, clientSecret, callbackURL, scopes, google.Endpoint),
 	}
 }

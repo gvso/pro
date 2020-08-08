@@ -10,7 +10,7 @@ import (
 // App contains dependencies used across the application.
 type App struct {
 	Database           *database.Database
-	Config             *config.Config
+	Config             config.Config
 	Logger             *logrus.Entry
-	GoogleAuthProvider *auth.Google
+	GoogleAuthProvider auth.Google
 }

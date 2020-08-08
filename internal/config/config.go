@@ -11,13 +11,13 @@ import (
 type Config struct{}
 
 // New loads a .env file.
-func New(filepath ...string) (*Config, error) {
-	err := godotenv.Overload(filepath...)
+func New(filepath ...string) (c Config, err error) {
+	err = godotenv.Overload(filepath...)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load .env file")
+		return c, errors.Wrap(err, "failed to load .env file")
 	}
 
-	return &Config{}, nil
+	return c, nil
 }
 
 // Get retrieves an environment variable.
