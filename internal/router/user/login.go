@@ -1,4 +1,4 @@
-package router
+package userroute
 
 import (
 	"time"
@@ -13,12 +13,13 @@ import (
 
 	"github.com/gvso/pro/internal/app"
 	"github.com/gvso/pro/internal/config"
+	"github.com/gvso/pro/internal/httpresponse"
 	"github.com/gvso/pro/pkg/auth"
 	"github.com/gvso/pro/pkg/user"
 )
 
-// UserRoutes returns the routes for /user
-func UserRoutes(r *gin.Engine, app *app.App) *gin.Engine {
+// LoginRoutes returns the routes for /user/login/
+func LoginRoutes(r *gin.Engine, app *app.App) *gin.Engine {
 	r.GET("/user/login/google", loginWith(app.Logger, app.GoogleAuthProvider))
 	r.GET("/user/login/google/callback", callback(app.Logger, app.Config, app.Database, app.GoogleAuthProvider))
 
@@ -56,7 +57,7 @@ func callback(logger *logrus.Entry, cfg config.Config, db database.Client, provi
 		userInfo, err := userInfoFromProvider(logger, provider, c.Query("code"))
 		if err != nil {
 			logger.Errorf("failed to get user information from provider: %v", err)
-			c.JSON(500, ServerErrorResponse{500, "failed to get user info from provider"})
+			c.JSON(500, httpresponse.Error("failed to get user info from provider"))
 			return
 		}
 
@@ -67,7 +68,7 @@ func callback(logger *logrus.Entry, cfg config.Config, db database.Client, provi
 		u, err := user.GetOrCreate(ctx, db, provider.Name(), userInfo)
 		if err != nil {
 			logger.Errorf("failed to login user: %v", err)
-			c.JSON(500, ServerErrorResponse{500, "could not log user in"})
+			c.JSON(500, httpresponse.Error("could not log user in"))
 			return
 		}
 
@@ -79,7 +80,7 @@ func callback(logger *logrus.Entry, cfg config.Config, db database.Client, provi
 		token, err := u.Token(clockwork.NewRealClock(), tokenDuration, cfg.Get("JWT_KEY"))
 		if err != nil {
 			logger.Errorf("failed to get JWT token: %v", err)
-			c.JSON(500, ServerErrorResponse{500, "failed to get JWT token"})
+			c.JSON(500, httpresponse.Error("failed to get JWT token"))
 			return
 		}
 
